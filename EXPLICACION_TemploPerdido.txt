@@ -1,0 +1,299 @@
+﻿=====================================================================
+  TEMPLO PERDIDO - Juego de plataformas 2D en Unity
+  3era Evaluación - Diseño de Videojuegos con Unity
+  Autor: Daniel García
+=====================================================================
+
+1. DE QUÉ SE TRATA
+---------------------------------------------------------------------
+Juego de plataformas 2D inspirado en los clásicos de exploración de
+selva (estilo Pitfall), con nombre, personaje y gráficos propios.
+Un explorador cruza la selva, salta obstáculos y fosos, esquiva
+enemigos, recoge monedas y al final recupera el ídolo dorado.
+
+- Si toca un enemigo o cae a un foso -> GAME OVER.
+- Si toma el ídolo dorado -> VICTORIA.
+
+Todos los gráficos (pixel art), la música y los sonidos son
+originales, creados para este proyecto (sin derechos de terceros).
+
+
+2. CONTROLES
+---------------------------------------------------------------------
+  ENTER ............ comenzar partida
+  A / D o flechas .. moverse a la izquierda / derecha
+  Shift ............ correr (mantener)
+  Espacio .......... saltar
+  + / - ............ subir / bajar la fuerza del salto (script del profe)
+  R ................ reiniciar (después de perder o ganar)
+
+
+3. CÓMO SE CUMPLE CADA PUNTO DE LA PAUTA
+---------------------------------------------------------------------
+Moverse con teclado y correr
+  -> Movement.cs: Move(rb, input, corriendo). Caminar = moveSpeed (5),
+     correr = runSpeed (9). PlayerController lee el input.
+
+Saltar obstáculos
+  -> Jump.cs: TryJump() aplica un impulso hacia arriba
+     (AddForce con ForceMode2D.Impulse). Hay piedras y fosos que saltar.
+
+Detectar colisiones / fin del juego al tocar enemigo
+  -> Enemigo.cs: OnTriggerEnter2D detecta al jugador (tag "Player")
+     y llama a GameManager.Instancia.FinDelJuego().
+  -> ZonaMortal.cs: trigger invisible bajo los fosos, mismo efecto.
+  -> Tesoro.cs: OnTriggerEnter2D para recoger monedas / ídolo.
+  -> Jump.cs: OnCollisionEnter2D / Stay / Exit para saber si está
+     en el suelo (tag "Suelo_01").
+
+Al menos 2 enemigos diferentes, en loop, sin perseguir
+  -> Escorpión (EnemigoPatrulla): va y vuelve en el suelo.
+  -> Murciélago (EnemigoVolador): va y vuelve + sube y baja (seno).
+  -> Tronco (EnemigoRodante): rueda a la izquierda y reaparece.
+  Ninguno mira la posición del jugador: solo siguen su rutina.
+
+Música de fondo
+  -> AudioManager.cs: AudioSource en loop con musica_selva.wav.
+
+Al menos 3 sonidos
+  -> salto.wav, muerte.wav, tesoro.wav y victoria.wav (4 sonidos),
+     reproducidos con PlayOneShot en un segundo AudioSource.
+
+Fondo de escena dinámico
+  -> FondoParallax.cs: 4 capas (cielo, nubes, montañas/templo, selva)
+     que se mueven a distinta velocidad según la cámara (parallax),
+     se repiten infinitamente, y las nubes además se mueven solas.
+
+Objetos con rutina de movimiento propia
+  -> PlataformaMovil: va y viene sobre un foso y lleva al jugador.
+  -> Tesoro: las monedas flotan y giran; el ídolo flota.
+  -> LianaPendulo: lianas que se balancean.
+
+Rigidbody2D / BoxCollider2D / MonoBehaviour
+  -> El jugador usa Rigidbody2D (dinámico) + BoxCollider2D.
+     Los enemigos usan Rigidbody2D (Kinematic) + collider Trigger.
+     Todas las clases heredan (directa o indirectamente) de MonoBehaviour.
+
+POO: clases, objetos y herencia
+  -> Ver sección 5.
+
+
+4. ORGANIZACIÓN DEL PROYECTO
+---------------------------------------------------------------------
+Assets/
+  Scenes/TemploPerdido.unity ... escena del juego
+  Scripts/ ..................... scripts del profe (modificados)
+     Personajes/ ............... Personaje, AnimadorExplorador, AnimacionSprite
+     Enemigos/ ................. Enemigo, EnemigoPatrulla, EnemigoVolador, EnemigoRodante
+     Objetos/ .................. ObjetoMovil, PlataformaMovil, Tesoro, LianaPendulo
+     Escenario/ ................ FondoParallax, CamaraSeguimiento, ZonaMortal
+     Gestores/ ................. GameManager, AudioManager
+  Sprites/TemploPerdido/ ....... pixel art
+  Audio/ ....................... música y efectos
+  Fisica/ ...................... material SinFriccion (el jugador no se pega a muros)
+  Editor/ConstructorEscena.cs .. herramienta de editor que armó la escena
+                                 (NO es parte del juego; si se vuelve a
+                                 ejecutar, sobrescribe la escena)
+
+Jerarquía de la escena (GameObjects vacíos como "carpetas"):
+  --- Gestores ---   GameManager, AudioManager
+  --- Fondo ---      Cielo, Nubes, Montanas y templo, Selva
+  --- Escenario ---  Suelos, Obstaculos (piedras, muros, repisa), ZonaMortal
+  --- Objetos ---    Lianas, PlataformaMovil, Tesoros (monedas + ídolo)
+  --- Enemigos ---   Escorpion_1, Escorpion_2, Murcielago, Tronco
+  --- Jugador ---    Explorador
+  --- UI ---         Canvas (HUD de tesoros, paneles Inicio / Game Over / Victoria)
+  Main Camera        con CamaraSeguimiento
+
+
+5. POO Y HERENCIA (lo que más pesa en la rúbrica)
+---------------------------------------------------------------------
+Árbol de herencia:
+
+  MonoBehaviour
+   ├─ Personaje (abstract)
+   │   ├─ PlayerController
+   │   └─ Enemigo (abstract)
+   │       ├─ EnemigoPatrulla
+   │       │   └─ EnemigoVolador
+   │       └─ EnemigoRodante
+   └─ ObjetoMovil (abstract)
+       ├─ PlataformaMovil
+       ├─ Tesoro
+       └─ LianaPendulo
+
+Personaje (clase padre)
+  - Tiene lo común: rb (Rigidbody2D), spriteRenderer, estaVivo.
+  - Su Update() decide CUÁNDO actuar: solo si está vivo y la partida
+    está en curso (GameManager.EstaJugando). Si se cumple, llama a
+    Comportamiento().
+  - Comportamiento() es ABSTRACT: cada hija decide CÓMO actúa.
+  - Morir() es VIRTUAL: tiene una versión por defecto que las hijas
+    pueden ampliar.
+  -> Esto se llama "método plantilla": el padre fija el esqueleto,
+     las hijas rellenan el detalle.
+
+PlayerController : Personaje
+  - Comportamiento() = leer teclado, mover, correr, voltear, saltar,
+    animar.
+  - Sobrescribe Morir(): llama a base.Morir() y además detiene al
+    jugador y lo tiñe de rojo.
+  - Usa COMPOSICIÓN (estilo del profe): se apoya en otros componentes
+    (Movement, Jump, Flip, JumpPowerAdjuster, AnimadorExplorador),
+    exigidos con [RequireComponent].
+
+Enemigo : Personaje
+  - Agrega velocidad y posicionInicial.
+  - Su Comportamiento() llama a Mover(), que es ABSTRACT: cada tipo
+    de enemigo tiene su propia rutina.
+  - Implementa la colisión con el jugador UNA sola vez para todos los
+    enemigos (OnTriggerEnter2D -> FinDelJuego).
+
+EnemigoPatrulla : Enemigo
+  - Mover(): avanza en "direccion" y la invierte al llegar a los
+    extremos (posicionInicial.x y posicionInicial.x + distancia).
+    Voltea el sprite con flipX.
+
+EnemigoVolador : EnemigoPatrulla   (herencia de 3 niveles)
+  - Mover(): llama a base.Mover() para REUTILIZAR la patrulla
+    horizontal, y luego le suma el sube/baja con Mathf.Sin.
+
+EnemigoRodante : Enemigo
+  - Mover(): avanza a la izquierda, gira como rueda
+    (grados = distancia / perímetro * 360) y al terminar el recorrido
+    vuelve a posicionInicial (loop).
+
+ObjetoMovil (clase padre de objetos)
+  - Guarda posicionInicial y entrega Oscilacion() = sin(tiempo) * amplitud.
+  - Moverse() es ABSTRACT: cada hija usa la oscilación a su manera:
+      PlataformaMovil -> la usa como desplazamiento horizontal.
+      Tesoro          -> la usa para flotar (y además gira).
+      LianaPendulo    -> la usa como ángulo de rotación.
+
+Conceptos de POO que se pueden nombrar:
+  - Herencia: ": Personaje", ": Enemigo", ": ObjetoMovil".
+  - Clases abstractas: Personaje, Enemigo, ObjetoMovil (no se pueden
+    instanciar, solo heredar).
+  - Métodos abstract: deben implementarse en la hija.
+  - Métodos virtual / override: se pueden reemplazar o ampliar.
+  - base.Metodo(): llamar a la versión del padre (base.Awake(),
+    base.Mover(), base.Morir()).
+  - Polimorfismo: Personaje.Update() llama a Comportamiento() sin
+    saber si es jugador o enemigo; cada objeto ejecuta su propia
+    versión.
+  - Encapsulamiento: campos private/protected, propiedades de solo
+    lectura (EstaVivo, EstaJugando, EstaEnSuelo).
+  - protected: visible para la clase y sus hijas (rb, posicionInicial).
+  - Singleton: GameManager.Instancia y AudioManager.Instancia
+    (una sola instancia accesible desde cualquier script).
+  - Enum: EstadoJuego { Inicio, Jugando, FinDelJuego, Victoria }.
+
+
+6. LOS DEMÁS SCRIPTS
+---------------------------------------------------------------------
+GameManager
+  - Maneja los estados del juego con el enum EstadoJuego.
+  - Time.timeScale = 0 pausa todo (inicio, game over, victoria);
+    = 1 cuando se juega.
+  - Muestra/oculta paneles de UI y cuenta los tesoros.
+  - FinDelJuego(), Victoria(), RecogerTesoro() son llamados por
+    enemigos, zona mortal y tesoros.
+  - R recarga la escena con SceneManager.LoadScene.
+
+AudioManager
+  - Crea dos AudioSource por código: uno para la música (loop) y otro
+    para efectos (PlayOneShot permite sonidos superpuestos).
+
+Jump (modificado)
+  - Solo cuenta como suelo si la normal del contacto apunta hacia
+    arriba (normal.y > 0.5): así chocar de lado contra un muro no
+    "recarga" el salto.
+  - Si está subiendo (velocity.y > 0.1) aún no aterrizó.
+  - OnCollisionExit2D: al salir del suelo ya no puede saltar.
+  - Antes de saltar pone velocity.y = 0 para que el salto siempre
+    tenga la misma altura.
+
+Movement (modificado)
+  - Sobrecarga de métodos: Move(rb, input) y Move(rb, input, corriendo).
+
+AnimadorExplorador / AnimacionSprite
+  - Animación simple cambiando el sprite por código (sin Animator):
+    quieto, 2 cuadros de caminar (más rápido al correr) y salto.
+
+CamaraSeguimiento
+  - En LateUpdate (después de que el jugador se movió) sigue al
+    jugador en X con Mathf.Lerp (suave) y Mathf.Clamp (no se sale
+    del nivel).
+
+FondoParallax
+  - posición = inicio + cámara.x * factorParallax.
+    factor 1 = se mueve igual que la cámara (parece fijo, muy lejos).
+    factor 0 = no se mueve (como el suelo).
+  - Cuando la cámara se aleja más de un ancho de imagen, se corre
+    la capa: así el fondo es infinito con solo 3 copias (modo Tiled).
+
+PlataformaMovil
+  - Si el jugador cae ENCIMA, lo hace hijo (SetParent) de la
+    plataforma para que se mueva con ella; al bajarse lo suelta.
+
+Repisa (one-way)
+  - PlatformEffector2D con "useOneWay": se atraviesa desde abajo y
+    se puede pararse arriba.
+
+
+7. PREGUNTAS PROBABLES Y RESPUESTAS CORTAS
+---------------------------------------------------------------------
+P: ¿Dónde está la herencia?
+R: Personaje -> PlayerController y Enemigo; Enemigo -> EnemigoPatrulla
+   y EnemigoRodante; EnemigoPatrulla -> EnemigoVolador; ObjetoMovil ->
+   PlataformaMovil, Tesoro y LianaPendulo.
+
+P: ¿Por qué Personaje es abstract?
+R: Porque no existe "un personaje genérico" en el juego; solo sirve de
+   molde. Obliga a las hijas a implementar Comportamiento().
+
+P: ¿Diferencia entre abstract y virtual?
+R: abstract no tiene código y la hija DEBE implementarlo; virtual
+   tiene código por defecto y la hija PUEDE sobrescribirlo.
+
+P: ¿Qué hace base.Mover() en EnemigoVolador?
+R: Ejecuta el Mover() del padre (EnemigoPatrulla), o sea la ida y
+   vuelta horizontal, y después se agrega el movimiento vertical.
+
+P: ¿Por qué los enemigos son Kinematic y Trigger?
+R: Kinematic: los muevo por código, no les afecta la gravedad ni los
+   empujones. Trigger: detectan al jugador sin chocar físicamente;
+   con eso basta para terminar la partida.
+
+P: ¿Cuál es la diferencia entre OnCollisionEnter2D y OnTriggerEnter2D?
+R: Collision = choque físico (los objetos no se atraviesan, ej. suelo).
+   Trigger = solo detecta que se superponen (ej. enemigo, moneda).
+
+P: ¿Cómo se pausa el juego?
+R: Time.timeScale = 0. La física y Time.deltaTime quedan en 0, así que
+   nada se mueve, pero Update del GameManager sigue leyendo teclas.
+
+P: ¿Cómo se sabe que el jugador está en el suelo?
+R: Jump revisa los contactos con objetos de tag "Suelo_01"; si la
+   normal apunta hacia arriba, está parado encima.
+
+P: ¿Por qué los enemigos no persiguen al jugador?
+R: Su rutina solo usa su propia posición inicial, distancia,
+   velocidad y el tiempo; nunca leen la posición del jugador.
+
+P: ¿Qué es un Singleton?
+R: Una clase con una sola instancia accesible globalmente
+   (GameManager.Instancia), así cualquier script puede avisar
+   "fin del juego" sin buscarlo en la escena.
+
+P: ¿Por qué GetAxisRaw y no GetAxis?
+R: GetAxisRaw entrega -1, 0 o 1 al instante (control más preciso en
+   plataformas); GetAxis suaviza el valor.
+
+P: ¿Qué es [RequireComponent]?
+R: Obliga a que el GameObject tenga ese componente; si no lo tiene,
+   Unity lo agrega solo.
+
+P: ¿Para qué es LateUpdate en la cámara?
+R: Se ejecuta después de todos los Update, cuando el jugador ya se
+   movió en ese frame; así la cámara no tiembla.

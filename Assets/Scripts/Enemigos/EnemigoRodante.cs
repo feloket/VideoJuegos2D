@@ -5,14 +5,19 @@ Licencia:Open estudiantil
 Funcionalidad: Templo Perdido - juego de plataformas 2D.
 Modificación: Enemigo que rueda hacia la izquierda (tronco). Cuando recorre "distancia"
               vuelve a su punto inicial y repite (loop). El jugador debe saltarlo.
+Marcas POO: busca con Ctrl+F "[HERENCIA]", "[OBJETO]", "[OVERRIDE]", etc.
+              Marcas en este archivo: [HERENCIA], [OBJETO], [OVERRIDE].
 */
 using UnityEngine;
 
+// [HERENCIA] EnemigoRodante hereda de Enemigo
+// [OBJETO] objeto en la escena: Tronco
 public class EnemigoRodante : Enemigo
 {
     public float distancia = 15f;   // Recorrido antes de reaparecer
     public float radio = 0.5f;      // Radio del tronco (para que el giro calce con el avance)
 
+    // [OVERRIDE] su propia rutina: rueda a la izquierda y reaparece
     protected override void Mover()
     {
         // Avanza a la izquierda en coordenadas del mundo

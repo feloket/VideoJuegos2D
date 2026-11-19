@@ -7,6 +7,8 @@ Modificación: Herramienta de EDITOR (no es parte del juego). Agrega el menú
               "Templo Perdido > Construir escena" que configura los sprites y arma la escena
               Assets/Scenes/TemploPerdido.unity con todos los GameObjects ordenados.
               Después de usarla, la escena se puede editar a mano normalmente.
+Marcas POO: busca con Ctrl+F "[HERENCIA]", "[OBJETO]", "[OVERRIDE]", etc.
+              Marcas en este archivo: [STATIC], [ATRIBUTO], [GENÉRICO], [OBJETO].
 */
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -14,6 +16,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
+// [NOTA] herramienta del EDITOR (carpeta Editor): no es parte del juego ni del build
+// [STATIC] clase estática: no se crean objetos de ella, solo se usan sus métodos
 public static class ConstructorEscena
 {
     const string RUTA_SPRITES = "Assets/Sprites/TemploPerdido/";
@@ -23,6 +27,7 @@ public static class ConstructorEscena
     const float PPU = 16f;
     const float SUELO_Y = -4f; // Altura de la superficie del suelo
 
+    // [ATRIBUTO] MenuItem agrega esta opción al menú de Unity
     [MenuItem("Templo Perdido/Construir escena")]
     public static void Construir()
     {
@@ -144,6 +149,7 @@ public static class ConstructorEscena
         Sprite[] escorpion = { CargarSprite("escorpion_1"), CargarSprite("escorpion_2") };
         Sprite[] murcielago = { CargarSprite("murcielago_1"), CargarSprite("murcielago_2") };
 
+        // [OBJETO] crea el GameObject y le agrega un objeto EnemigoPatrulla
         EnemigoPatrulla e1 = CrearEnemigo<EnemigoPatrulla>(enemigos, "Escorpion_1", escorpion, new Vector3(29.5f, SUELO_Y + 0.375f, 0f), new Vector2(0.85f, 0.5f));
         e1.velocidad = 2f;
         e1.distancia = 8f;
@@ -343,6 +349,7 @@ public static class ConstructorEscena
     }
 
     // radioCircular > 0 usa un CircleCollider2D (tronco); si no, un BoxCollider2D
+    // [GENÉRICO] T puede ser cualquier clase hija de Enemigo (where T : Enemigo)
     static T CrearEnemigo<T>(Transform padre, string nombre, Sprite[] cuadros, Vector3 posicion, Vector2 tamanoColision, float radioCircular = 0f) where T : Enemigo
     {
         GameObject go = new GameObject(nombre);
